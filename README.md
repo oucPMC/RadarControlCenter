@@ -1,6 +1,5 @@
-# BomberRadar
-一个小学期合作项目实践
-## 谁会，来教教
-
-## 牙牙乐会
- bull shit
+# RadarControlCenter
+雷达控制中心仓库
+包括两个任务
+- 雷达配置
+- 雷达显示
