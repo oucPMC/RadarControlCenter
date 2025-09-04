@@ -1,0 +1,10 @@
+debug/CommManager.o
+debug/PacketCodec.o
+debug/Protocol.o
+debug/UdpLink.o
+debug/main.o
+debug/Configure.o
+debug/qrc_Configure.o
+debug/moc_CommManager.o
+debug/moc_Configure.o
+debug/moc_UdpLink.o
