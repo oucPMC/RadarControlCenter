@@ -18,6 +18,13 @@ private:
     RadarPlot *radar;
     QPushButton *startButton;
     QPushButton *stopButton;
+    QTimer *simTimer;
+
+private slots:
+    void onRadarDataReceived(const QByteArray &jsonData);
+    void simulateJsonData();
+    void startSimulation();
+    void stopSimulation();
 };
 
 #endif // MAINWINDOW_H
