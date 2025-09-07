@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include "radarplot.h"
 
 class MainWindow : public QMainWindow

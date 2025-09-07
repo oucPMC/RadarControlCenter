@@ -9,6 +9,8 @@
 #include <QVector>
 #include <QPointF>
 #include <QString>
+#include <QLinearGradient>
+#include <QFont>
 
 struct TrackPoint {
     double angle;
@@ -27,6 +29,7 @@ public:
     ~RadarPlot() override = default;
 
     void addTarget(double angleDeg, double radiusRatio);
+    QSize sizeHint() const override { return QSize(600, 600); }
 
 public slots:
     void startScan();

@@ -42,6 +42,14 @@ template <> constexpr inline auto RadarPlot::qt_create_metaobjectdata<qt_meta_ta
         "startScan",
         "",
         "stopScan",
+        "updateTrack",
+        "id",
+        "angleDeg",
+        "distanceRatio",
+        "speed",
+        "latitude",
+        "longitude",
+        "type",
         "updateScan"
     };
 
@@ -50,8 +58,13 @@ template <> constexpr inline auto RadarPlot::qt_create_metaobjectdata<qt_meta_ta
         QtMocHelpers::SlotData<void()>(1, 2, QMC::AccessPublic, QMetaType::Void),
         // Slot 'stopScan'
         QtMocHelpers::SlotData<void()>(3, 2, QMC::AccessPublic, QMetaType::Void),
+        // Slot 'updateTrack'
+        QtMocHelpers::SlotData<void(int, double, double, double, double, double, int)>(4, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::Int, 5 }, { QMetaType::Double, 6 }, { QMetaType::Double, 7 }, { QMetaType::Double, 8 },
+            { QMetaType::Double, 9 }, { QMetaType::Double, 10 }, { QMetaType::Int, 11 },
+        }}),
         // Slot 'updateScan'
-        QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(12, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -77,11 +90,11 @@ void RadarPlot::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, v
         switch (_id) {
         case 0: _t->startScan(); break;
         case 1: _t->stopScan(); break;
-        case 2: _t->updateScan(); break;
+        case 2: _t->updateTrack((*reinterpret_cast< std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast< std::add_pointer_t<double>>(_a[2])),(*reinterpret_cast< std::add_pointer_t<double>>(_a[3])),(*reinterpret_cast< std::add_pointer_t<double>>(_a[4])),(*reinterpret_cast< std::add_pointer_t<double>>(_a[5])),(*reinterpret_cast< std::add_pointer_t<double>>(_a[6])),(*reinterpret_cast< std::add_pointer_t<int>>(_a[7]))); break;
+        case 3: _t->updateScan(); break;
         default: ;
         }
     }
-    (void)_a;
 }
 
 const QMetaObject *RadarPlot::metaObject() const
@@ -103,14 +116,14 @@ int RadarPlot::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 3)
+        if (_id < 4)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 3;
+        _id -= 4;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 3)
+        if (_id < 4)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 3;
+        _id -= 4;
     }
     return _id;
 }
