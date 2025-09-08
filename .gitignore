@@ -24,3 +24,5 @@ qmake/
 
 *.log
 *.tlog
+
+ControlCenter/build/
