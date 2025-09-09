@@ -432,6 +432,7 @@ Makefile: ../../RaderPanel.pro D:/02_Software/Qt/6.9.2/mingw_64/mkspecs/win32-g+
 		../../RaderPanel.pro \
 		D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6Widgets.prl \
 		D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6Gui.prl \
+		D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6Network.prl \
 		D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6Core.prl \
 		D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6EntryPoint.prl \
 		D:/02_Software/Qt/6.9.2/mingw_64/mkspecs/features/build_pass.prf \
@@ -800,6 +801,7 @@ D:/02_Software/Qt/6.9.2/mingw_64/mkspecs/features/lex.prf:
 ../../RaderPanel.pro:
 D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6Widgets.prl:
 D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6Gui.prl:
+D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6Network.prl:
 D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6Core.prl:
 D:/02_Software/Qt/6.9.2/mingw_64/lib/Qt6EntryPoint.prl:
 D:/02_Software/Qt/6.9.2/mingw_64/mkspecs/features/build_pass.prf:

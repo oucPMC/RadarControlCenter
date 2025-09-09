@@ -141,6 +141,12 @@ void RadarPlot::drawCanvas(QPainter *painter, const QRectF &rect) const
         // 绘制轨迹线
         for (int i = 0; i < track.size(); ++i) {
             const TrackPoint &tp = track[i];
+            // 检查数据有效性
+            if (std::isnan(tp.distance) || tp.distance <= 0 ||
+                std::isnan(tp.angle) || tp.angle < 0 || tp.angle >= 360) {
+                qWarning() << "Invalid track point data: distance or angle out of range.";
+                continue;  // 跳过这个无效的轨迹点
+            }
             double r = tp.distance * radius;
             double theta = tp.angle * M_PI / 180.0;
             QPointF pos(center.x() + r * qCos(theta), center.y() - r * qSin(theta));
@@ -155,6 +161,12 @@ void RadarPlot::drawCanvas(QPainter *painter, const QRectF &rect) const
 
         // 绘制最新目标点
         const TrackPoint &last = track.last();
+        // 检查数据有效性
+        if (std::isnan(last.distance) || last.distance <= 0 ||
+            std::isnan(last.angle) || last.angle < 0 || last.angle >= 360) {
+            qWarning() << "Invalid last track point data: distance or angle out of range.";
+            continue;  // 跳过这个无效的目标点
+        }
         double rLast = last.distance * radius;
         double thetaLast = last.angle * M_PI / 180.0;
         QPointF lastPos(center.x() + rLast * qCos(thetaLast), center.y() - rLast * qSin(thetaLast));
@@ -202,4 +214,5 @@ void RadarPlot::drawCanvas(QPainter *painter, const QRectF &rect) const
     painter->setBrush(QColor(0, 255, 100));
     painter->setPen(QPen(Qt::white, 1));
     painter->drawEllipse(center, 3, 3);
-    }}
+    }
+}

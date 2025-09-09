@@ -41,23 +41,20 @@ template <> constexpr inline auto MainWindow::qt_create_metaobjectdata<qt_meta_t
         "MainWindow",
         "onRadarDataReceived",
         "",
-        "jsonData",
-        "simulateJsonData",
         "startSimulation",
-        "stopSimulation"
+        "stopSimulation",
+        "updateRadarData"
     };
 
     QtMocHelpers::UintData qt_methods {
         // Slot 'onRadarDataReceived'
-        QtMocHelpers::SlotData<void(const QByteArray &)>(1, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::QByteArray, 3 },
-        }}),
-        // Slot 'simulateJsonData'
-        QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(1, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'startSimulation'
-        QtMocHelpers::SlotData<void()>(5, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(3, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'stopSimulation'
-        QtMocHelpers::SlotData<void()>(6, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'updateRadarData'
+        QtMocHelpers::SlotData<void()>(5, 2, QMC::AccessPrivate, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
     };
@@ -81,13 +78,14 @@ void MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
     auto *_t = static_cast<MainWindow *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
         switch (_id) {
-        case 0: _t->onRadarDataReceived((*reinterpret_cast< std::add_pointer_t<QByteArray>>(_a[1]))); break;
-        case 1: _t->simulateJsonData(); break;
-        case 2: _t->startSimulation(); break;
-        case 3: _t->stopSimulation(); break;
+        case 0: _t->onRadarDataReceived(); break;
+        case 1: _t->startSimulation(); break;
+        case 2: _t->stopSimulation(); break;
+        case 3: _t->updateRadarData(); break;
         default: ;
         }
     }
+    (void)_a;
 }
 
 const QMetaObject *MainWindow::metaObject() const

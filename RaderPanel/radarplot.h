@@ -12,6 +12,8 @@
 #include <QLinearGradient>
 #include <QFont>
 
+#define MAX_RANGE 2000  // 初始最大探测距离 2000 米
+
 struct TrackPoint {
     double angle;
     double distance;
@@ -48,9 +50,8 @@ private:
     int angle;                  // 扫描角度
     QTimer *timer;
     QVector<QPointF> targets;   // 测试点
-
-    QMap<int, QList<TrackPoint>> trackMap; // 每个目标的轨迹
     static constexpr int MAX_LEN = 15;
+    QMap<int, QList<TrackPoint>> trackMap; // 每个目标的轨迹
 };
 
 #endif // RADARPLOT_H
