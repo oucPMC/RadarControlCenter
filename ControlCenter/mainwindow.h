@@ -1,4 +1,5 @@
 #pragma once
+#include "bus_iface.h"    // 统一通信接口
 #include <QMainWindow>
 #include <QStandardItemModel>
 #include <QLabel>
@@ -14,6 +15,12 @@ public:
     ~MainWindow();
 
 private slots:
+    // BusIface 信号对接
+    void onBusTx(quint16 msgId, quint16 seq, QList<BusIface::Target> targets, QString note);
+    void onBusAck(quint16 ackId, quint16 respondedId, quint16 seq, quint16 result, QString note);
+    void onBusPayload(quint16 msgId, quint16 seq, QByteArray payload);
+    void onBus3002(QVariantMap fields);
+
     // Toolbar actions
     void onLoadConfig();
     void onSaveConfig();
@@ -53,6 +60,15 @@ private:
     void setupConnections();
     void setupStatusBar();
 
+    BusIface* m_bus = nullptr;              // 统一通信接口（外部注入或工厂创建）
+
+    // === 工具：UI <-> 数据 ===
+    QList<BusIface::Target> collectTargets() const;
+    QByteArray buildPayloadFromJson(const QVariantMap& j) const; // 统一序列化占位
+    void appendCmdRow(const QString& cmd, quint16 seq, const QString& targets, const QString& result, const QString& note);
+    void appendAckRow(quint16 ackId, quint16 respondedId, quint16 seq, quint16 result, const QString& note);
+
+    
     // Models for tables
     QStandardItemModel *m_targetsModel = nullptr;
     QStandardItemModel *m_cmdLogModel = nullptr;

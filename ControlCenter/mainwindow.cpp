@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "bus_iface.h"
 #include <QLabel>
 #include <QHeaderView>
 #include <QFileDialog>
@@ -10,6 +11,54 @@
 #include <QCheckBox>
 #include <QAction>
 #include <QPushButton>
+
+QList<BusIface::Target> MainWindow::collectTargets() const {
+    QList<BusIface::Target> out;
+    for (int r = 0; r < m_targetsModel->rowCount(); ++r) {
+        auto enIt = m_targetsModel->item(r, 0);
+        auto ipIt = m_targetsModel->item(r, 1);
+        auto poIt = m_targetsModel->item(r, 2);
+        if (!ipIt || !poIt) continue;
+        BusIface::Target t;
+        t.enabled = enIt ? (enIt->checkState() == Qt::Checked) : true;
+        t.ip = ipIt->text().trimmed();
+        t.port = poIt->text().trimmed().toUShort();
+        out << t;
+    }
+    return out;
+}
+
+QByteArray MainWindow::buildPayloadFromJson(const QVariantMap& j) const {
+    // 统一占位实现：转 JSON 文本。
+    QJsonObject o = QJsonObject::fromVariantMap(j);
+    QJsonDocument doc(o);
+    return doc.toJson(QJsonDocument::Compact);
+}
+
+void MainWindow::appendCmdRow(const QString& cmd, quint16 seq, const QString& targets,
+    const QString& result, const QString& note) {
+    QList<QStandardItem*> row;
+    row << new QStandardItem(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"))
+        << new QStandardItem(cmd)
+        << new QStandardItem(seq == 0 ? "-" : QString::number(seq))
+        << new QStandardItem(targets)
+        << new QStandardItem(result)
+        << new QStandardItem(note);
+    m_cmdLogModel->appendRow(row);
+}
+
+void MainWindow::appendAckRow(quint16 ackId, quint16 respondedId, quint16 seq,
+    quint16 result, const QString& note) {
+    QList<QStandardItem*> row;
+    row << new QStandardItem(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"))
+        << new QStandardItem(QString("0x%1").arg(ackId, 4, 16, QChar('0')).toUpper())
+        << new QStandardItem(QString("0x%1").arg(respondedId, 4, 16, QChar('0')).toUpper())
+        << new QStandardItem(QString::number(seq))
+        << new QStandardItem(QString::number(result))
+        << new QStandardItem(note);
+    m_ackLogModel->appendRow(row);
+}
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -133,20 +182,149 @@ void MainWindow::setupStatusBar() {
     sbAlarm->setText("告警: -");
 }
 
+void MainWindow::onBusTx(quint16 msgId, quint16 seq, QList<BusIface::Target> targets, QString note) {
+    QString t;
+    for (int i = 0;i < targets.size();++i) {
+        if (!targets[i].enabled) continue;
+        if (!t.isEmpty()) t += "; ";
+        t += QString("%1:%2").arg(targets[i].ip).arg(targets[i].port);
+    }
+    appendCmdRow(QString("0x%1").arg(msgId, 4, 16, QChar('0')).toUpper(), seq, t, "-", note);
+}
+
+void MainWindow::onBusAck(quint16 ackId, quint16 respondedId, quint16 seq, quint16 result, QString note) {
+    appendAckRow(ackId, respondedId, seq, result, note);
+}
+
+void MainWindow::onBusPayload(quint16 msgId, quint16 seq, QByteArray payload) {
+    // 演示：把 payload 试着当 JSON 显示到“参数查询表”
+    QJsonParseError err{};
+    auto doc = QJsonDocument::fromJson(payload, &err);
+    if (err.error == QJsonParseError::NoError && doc.isObject()) {
+        auto o = doc.object().toVariantMap();
+        for (auto it = o.begin(); it != o.end(); ++it) {
+            QList<QStandardItem*> row;
+            row << new QStandardItem(it.key())
+                << new QStandardItem(it.value().toString())
+                << new QStandardItem("") << new QStandardItem(QString("0x%1 seq=%2").arg(msgId, 4, 16, QChar('0')).toUpper().arg(seq));
+            m_queryModel->appendRow(row);
+        }
+    }
+    else {
+        // 若不是 JSON，就原样塞入一行
+        QList<QStandardItem*> row;
+        row << new QStandardItem(QString("MSG 0x%1").arg(msgId, 4, 16, QChar('0')).toUpper())
+            << new QStandardItem(QString::fromUtf8(payload)))
+            << new QStandardItem("") << new QStandardItem(QString("seq=%1").arg(seq));
+        m_queryModel->appendRow(row);
+    }
+}
+
+void MainWindow::onBus3002(QVariantMap f) {
+    // 底部状态条关键字段
+    sbWork->setText(QString("状态: %1").arg(f.value("workMode").toString("-")));
+    sbFreq->setText(QString("频点: %1").arg(f.value("freq").toString("-")));
+    sbSilent->setText(QString("静默: %1").arg(f.value("silent").toString("-")));
+    sbGeo->setText(QString("经纬高: %1").arg(f.value("geo").toString("-")));
+    sbAtt->setText(QString("姿态: %1").arg(f.value("att").toString("-")));
+    sbAlarm->setText(QString("告警: %1").arg(f.value("alarm").toString("-")));
+}
+
+
 // ===== Toolbar slots =====
 void MainWindow::onLoadConfig() {
-    // TODO: 读取 JSON，填充控件与表格
     const QString file = QFileDialog::getOpenFileName(this, "导入配置", QString(), "JSON (*.json)");
     if (file.isEmpty()) return;
-    QMessageBox::information(this, "提示", "已选择配置文件: " + file + "\n(此处留给同学实现解析与应用)");
+    QFile f(file);
+    if (!f.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "错误", "无法读取文件");
+        return;
+    }
+    const auto doc = QJsonDocument::fromJson(f.readAll());
+    if (!doc.isObject()) { QMessageBox::warning(this, "错误", "JSON 格式不正确"); return; }
+    const auto o = doc.object();
+
+    // 连接配置
+    ui->spinLocalPort->setValue(o.value("localPort").toInt(50000));
+    ui->spinAckTimeoutMs->setValue(o.value("ackTimeoutMs").toInt(1000));
+    ui->spinRetry->setValue(o.value("maxRetries").toInt(3));
+    ui->comboCastMode->setCurrentIndex(o.value("castMode").toInt(0));
+
+    // 目标列表
+    m_targetsModel->removeRows(0, m_targetsModel->rowCount());
+    const auto arr = o.value("targets").toArray();
+    for (const auto& v : arr) {
+        const auto t = v.toObject();
+        const int row = m_targetsModel->rowCount();
+        m_targetsModel->insertRow(row);
+        auto en = new QStandardItem; en->setCheckable(true);
+        en->setCheckState(t.value("enabled").toBool(true) ? Qt::Checked : Qt::Unchecked);
+        en->setEditable(false);
+        m_targetsModel->setItem(row, 0, en);
+        m_targetsModel->setItem(row, 1, new QStandardItem(t.value("ip").toString("192.168.1.100")));
+        m_targetsModel->setItem(row, 2, new QStandardItem(QString::number(t.value("port").toInt(62856))));
+    }
+
+    // 其它（可扩展：静默、位姿、IP 表等）
+    m_ipListModel->removeRows(0, m_ipListModel->rowCount());
+    const auto iparr = o.value("ipList").toArray();
+    for (const auto& v : iparr) {
+        const auto j = v.toObject();
+        QList<QStandardItem*> row;
+        row << new QStandardItem(j.value("dsp").toString())
+            << new QStandardItem(j.value("ip").toString())
+            << new QStandardItem(j.value("mask").toString())
+            << new QStandardItem(j.value("gateway").toString())
+            << new QStandardItem(QString::number(j.value("port").toInt()));
+        m_ipListModel->appendRow(row);
+    }
+
+    QMessageBox::information(this, "提示", "配置已载入");
 }
 
 void MainWindow::onSaveConfig() {
-    // TODO: 收集界面与模型数据，保存到 JSON
     const QString file = QFileDialog::getSaveFileName(this, "保存配置", "config.json", "JSON (*.json)");
     if (file.isEmpty()) return;
-    QMessageBox::information(this, "提示", "将保存到: " + file + "\n(此处留给同学实现实际写入)");
+
+    QJsonObject o;
+    o["localPort"] = ui->spinLocalPort->value();
+    o["ackTimeoutMs"] = ui->spinAckTimeoutMs->value();
+    o["maxRetries"] = ui->spinRetry->value();
+    o["castMode"] = ui->comboCastMode->currentIndex();
+
+    QJsonArray arr;
+    for (int r = 0;r < m_targetsModel->rowCount();++r) {
+        QJsonObject t;
+        auto en = m_targetsModel->item(r, 0);
+        t["enabled"] = en ? (en->checkState() == Qt::Checked) : true;
+        t["ip"] = m_targetsModel->item(r, 1)->text();
+        t["port"] = m_targetsModel->item(r, 2)->text().toUShort();
+        arr.append(t);
+    }
+    o["targets"] = arr;
+
+    QJsonArray iparr;
+    for (int r = 0;r < m_ipListModel->rowCount();++r) {
+        QJsonObject j;
+        j["dsp"] = m_ipListModel->item(r, 0)->text();
+        j["ip"] = m_ipListModel->item(r, 1)->text();
+        j["mask"] = m_ipListModel->item(r, 2)->text();
+        j["gateway"] = m_ipListModel->item(r, 3)->text();
+        j["port"] = m_ipListModel->item(r, 4)->text().toUShort();
+        iparr.append(j);
+    }
+    o["ipList"] = iparr;
+
+    QFile f(file);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        QMessageBox::warning(this, "错误", "无法写入文件");
+        return;
+    }
+    f.write(QJsonDocument(o).toJson(QJsonDocument::Indented));
+    f.close();
+    QMessageBox::information(this, "提示", "配置已保存");
 }
+
 
 void MainWindow::onConnect() { onStartListen(); }
 void MainWindow::onDisconnect() { onStopListen(); }
@@ -158,14 +336,23 @@ void MainWindow::onClearLogs() {
 
 // ===== Connection tab =====
 void MainWindow::onStartListen() {
-    // TODO: 读取 spinLocalPort/spinAckTimeoutMs/spinRetry/comboCastMode，启动socket
-    sbConn->setText("监听中");
+    if (!m_bus) { QMessageBox::warning(this, "错误", "通信接口未就绪"); return; }
+    BusIface::Policy p;
+    p.ackTimeoutMs = ui->spinAckTimeoutMs->value();
+    p.maxRetries = ui->spinRetry->value();
+
+    const quint16 localPort = ui->spinLocalPort->value();
+    m_bus->setTargets(collectTargets());
+    const bool ok = m_bus->start(localPort, p);
+    sbConn->setText(ok ? "监听中" : "未连接");
+    if (!ok) QMessageBox::warning(this, "错误", "启动监听失败");
 }
 
 void MainWindow::onStopListen() {
-    // TODO: 停止socket
+    if (m_bus) m_bus->stop();
     sbConn->setText("未连接");
 }
+
 
 void MainWindow::onAddTarget() {
     const int row = m_targetsModel->rowCount();
@@ -203,70 +390,153 @@ void MainWindow::onDisableAllTargets() {
 
 // ===== Task tab =====
 void MainWindow::onStandby() {
-    // TODO: 下发待机
-    QList<QStandardItem*> row;
-    row << new QStandardItem(QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss"))
-        << new QStandardItem("0x1003 待机")
-        << new QStandardItem("-")
-        << new QStandardItem("-")
-        << new QStandardItem("-")
-        << new QStandardItem("占位");
-    m_cmdLogModel->appendRow(row);
+    if (!m_bus) return;
+    const quint16 MSG = 0x1003; // 待机（示例）
+    QVariantMap j; j["mode"] = "standby";
+    const auto seq = m_bus->sendCommand(MSG, buildPayloadFromJson(j));
+    appendCmdRow("0x1003 待机", seq, "-", "-", "发送");
 }
 
 void MainWindow::onSearch() {
-    // TODO
+    if (!m_bus) return;
+    const quint16 MSG = 0x1004; // 搜索（示例）
+    QVariantMap j; j["mode"] = "search";
+    const auto seq = m_bus->sendCommand(MSG, buildPayloadFromJson(j));
+    appendCmdRow("0x1004 搜索", seq, "-", "-", "发送");
 }
 
 void MainWindow::onTrackStart() {
-    // TODO: 读取 editTrackId/spinRange/spinAz/spinEl/spinCourse/spinSpeed
+    if (!m_bus) return;
+    const quint16 MSG = 0x1011; // 启动跟踪（示例）
+    QVariantMap j;
+    j["trackId"] = ui->editTrackId->text().trimmed();
+    j["range_km"] = ui->spinRange->value();
+    j["az_deg"] = ui->spinAz->value();
+    j["el_deg"] = ui->spinEl->value();
+    j["course_deg"] = ui->spinCourse->value();
+    j["speed_mps"] = ui->spinSpeed->value();
+    const auto seq = m_bus->sendCommand(MSG, buildPayloadFromJson(j));
+    appendCmdRow("0x1011 跟踪开始", seq, "-", "-", "发送");
 }
 
 void MainWindow::onTrackStop() {
-    // TODO
+    if (!m_bus) return;
+    const quint16 MSG = 0x1012; // 停止跟踪（示例）
+    QVariantMap j; j["trackId"] = ui->editTrackId->text().trimmed();
+    const auto seq = m_bus->sendCommand(MSG, buildPayloadFromJson(j));
+    appendCmdRow("0x1012 跟踪停止", seq, "-", "-", "发送");
 }
 
 void MainWindow::onDeploy() {
-    // TODO
+    if (!m_bus) return;
+    const quint16 MSG = 0x1021; // 展开（示例）
+    QVariantMap j; j["action"] = "deploy";
+    const auto seq = m_bus->sendCommand(MSG, buildPayloadFromJson(j));
+    appendCmdRow("0x1021 展开", seq, "-", "-", "发送");
 }
 
 void MainWindow::onRetract() {
-    // TODO
+    if (!m_bus) return;
+    const quint16 MSG = 0x1022; // 撤收（示例）
+    QVariantMap j; j["action"] = "retract";
+    const auto seq = m_bus->sendCommand(MSG, buildPayloadFromJson(j));
+    appendCmdRow("0x1022 撤收", seq, "-", "-", "发送");
 }
 
 void MainWindow::onSendTrackParams() {
-    // TODO
+    if (!m_bus) return;
+    const quint16 MSG = 0x1013; // 设置跟踪参数（示例）
+    QVariantMap j;
+    j["range_km"] = ui->spinRange->value();
+    j["az_deg"] = ui->spinAz->value();
+    j["el_deg"] = ui->spinEl->value();
+    j["course_deg"] = ui->spinCourse->value();
+    j["speed_mps"] = ui->spinSpeed->value();
+    const auto seq = m_bus->sendCommand(MSG, buildPayloadFromJson(j));
+    appendCmdRow("0x1013 跟踪参数", seq, "-", "-", "发送");
 }
+
 
 // ===== Query tab =====
 void MainWindow::onQueryStatus() {
-    // TODO: 触发查询状态或依赖上报
+    if (!m_bus) return;
     m_queryModel->removeRows(0, m_queryModel->rowCount());
-    // 占位演示
-    m_queryModel->appendRow({new QStandardItem("WorkState"), new QStandardItem("-"), new QStandardItem(""), new QStandardItem("0x3002")});
+    const quint16 MSG = 0x3002; // 关键状态查询/订阅（按实现决定是否需要显式查询）
+    QVariantMap j; j["query"] = "status";
+    const auto seq = m_bus->sendCommand(MSG, buildPayloadFromJson(j));
+    appendCmdRow("0x3002 状态查询", seq, "-", "-", "发送");
 }
 
 void MainWindow::onQueryParam() {
-    // TODO: 根据 comboQueryId 的选择，发送“参数查询报文”
+    if (!m_bus) return;
+    // 根据下拉框选择不同的参数查询 ID
+    const QString sel = ui->comboQueryId->currentText();
+    quint16 msg = 0;
+    if (sel.contains("静默区")) msg = 0x2092;
+    else if (sel.contains("IP配置")) msg = 0x2082;
+    else if (sel.contains("位姿补偿")) msg = 0x2012;
+    else msg = 0x2000; // 兜底示例
+
+    QVariantMap j; j["query"] = sel;
+    const auto seq = m_bus->sendCommand(msg, buildPayloadFromJson(j));
+    appendCmdRow(QString("0x%1 参数查询").arg(msg, 4, 16, QChar('0')).toUpper(), seq, "-", "-", "发送");
 }
 
 void MainWindow::onToggleSubscribe3002(bool checked) {
-    // TODO: 控制 UI 刷新节流等
     ui->grpStatusMini->setEnabled(checked);
+    if (m_bus) m_bus->subscribe(0x3002, checked);
 }
+
 
 // ===== Config tab =====
 void MainWindow::onApplySilent() {
-    // TODO: 读取 spinSilentStart/End，下发 0x2091
-    QMessageBox::information(this, "静默区", "将应用静默区配置（占位）。");
+    if (!m_bus) { QMessageBox::warning(this, "错误", "通信接口未就绪"); return; }
+    const double sDeg = ui->spinSilentStart->value();
+    const double eDeg = ui->spinSilentEnd->value();
+    // 这里仍然只通过统一接口传输抽象数据，不做具体单位换算与编码
+    QVariantMap j; j["start_deg"] = sDeg; j["end_deg"] = eDeg;
+    const auto seq = m_bus->sendCommand(0x2091, buildPayloadFromJson(j));
+    appendCmdRow("0x2091 设置静默区", seq, "-", "-", "发送");
+    // 闭环：立即查询
+    const auto qseq = m_bus->sendCommand(0x2092, buildPayloadFromJson({ {"query","silent_zone"} }));
+    appendCmdRow("0x2092 查询静默区", qseq, "-", "-", "发送");
 }
 
 void MainWindow::onApplyIp() {
-    // TODO: 读取 comboIpMode/spinDspIndex/tableIpList，下发 0x2081
-    QMessageBox::information(this, "IP配置", "将应用IP配置（占位）。");
+    if (!m_bus) { QMessageBox::warning(this, "错误", "通信接口未就绪"); return; }
+    QVariantMap cfg;
+    cfg["modeIndex"] = ui->comboIpMode->currentIndex();
+    cfg["dspIndex"] = ui->spinDspIndex->value();
+    // 采集表格
+    QVariantList list;
+    for (int r = 0;r < m_ipListModel->rowCount();++r) {
+        QVariantMap one;
+        one["dsp"] = m_ipListModel->item(r, 0)->text();
+        one["ip"] = m_ipListModel->item(r, 1)->text();
+        one["mask"] = m_ipListModel->item(r, 2)->text();
+        one["gateway"] = m_ipListModel->item(r, 3)->text();
+        one["port"] = m_ipListModel->item(r, 4)->text().toUShort();
+        list << one;
+    }
+    cfg["list"] = list;
+    const auto seq = m_bus->sendCommand(0x2081, buildPayloadFromJson(cfg));
+    appendCmdRow("0x2081 设置IP", seq, "-", "-", "发送");
+    // 闭环查询
+    const auto qseq = m_bus->sendCommand(0x2082, buildPayloadFromJson({ {"query","ip"} }));
+    appendCmdRow("0x2082 查询IP", qseq, "-", "-", "发送");
 }
 
 void MainWindow::onApplyPose() {
-    // TODO: 读取位姿与补偿字段，下发 0x2011
-    QMessageBox::information(this, "位置/补偿", "将应用位置/补偿（占位）。");
-}
+    if (!m_bus) { QMessageBox::warning(this, "错误", "通信接口未就绪"); return; }
+    // 读取界面：示例字段名，按你的 UI 控件名替换
+    QVariantMap j;
+    j["lat_deg"] = ui->spinLat->value();
+    j["lon_deg"] = ui->spinLon->value();
+    j["alt_m"] = ui->spinAlt->value();
+    j["roll_deg"] = ui->spinRoll->value();
+    j["pitch_deg"] = ui->spinPitch->value();
+    j["yaw_deg"] = ui->spinYaw->value();
+    j["east_m"] = ui->spinBiasE->value();
+    j["north_m"] = ui->spinBiasN->value();
+
+
