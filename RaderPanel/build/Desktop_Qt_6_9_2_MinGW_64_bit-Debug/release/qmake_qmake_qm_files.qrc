@@ -1,5 +1,5 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="i18n">
-<file alias="RaderPanel_zh_CN.qm">C:/Users/10250/Desktop/radar/radarUI/RadarControlCenter/RaderPanel/build/Desktop_Qt_6_9_2_MinGW_64_bit-Debug/release/RaderPanel_zh_CN.qm</file>
+<file alias="RaderPanel_zh_CN.qm">D:/01_Study/SoftwareDevelopment/RadarControlCenter/RaderPanel/build/Desktop_Qt_6_9_2_MinGW_64_bit-Debug/release/RaderPanel_zh_CN.qm</file>
 </qresource>
 </RCC>

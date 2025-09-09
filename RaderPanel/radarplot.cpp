@@ -12,9 +12,6 @@ RadarPlot::RadarPlot(QWidget *parent)
     // 设置窗口最小大小
     setMinimumSize(600, 600);
 
-    // 设置标题
-    setTitle("雷达监控系统");
-
     // 设置科技感背景 - 黑色背景
     setPlotBackground(Qt::black);
 
@@ -72,6 +69,9 @@ void RadarPlot::drawCanvas(QPainter *painter, const QRectF &rect) const
     QPointF center = rect.center();
     double radius = qMin(rect.width(), rect.height()) / 2.0 - 20;
 
+    // 启用抗锯齿，确保圆环绘制平滑
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
     // 绘制雷达背景圆环
     for (int i = 1; i <= 5; ++i) {
         double ringRadius = radius * i / 5.0;
@@ -125,8 +125,6 @@ void RadarPlot::drawCanvas(QPainter *painter, const QRectF &rect) const
     }
 
     // --- 绘制轨迹 ---
-    painter->setRenderHint(QPainter::Antialiasing, true);
-
     for (auto it = trackMap.constBegin(); it != trackMap.constEnd(); ++it) {
         const QList<TrackPoint> &track = it.value();
         if (track.isEmpty()) continue;

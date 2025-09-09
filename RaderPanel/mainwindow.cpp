@@ -7,6 +7,8 @@
 #include <QStyleFactory>
 #include <QPalette>
 #include <QApplication>
+#include <QLabel>
+#include <QVBoxLayout>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -33,8 +35,6 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     QFrame, QGroupBox {
-        border: 1px solid #00ffaa;
-        border-radius: 6px;
         margin-top: 10px;
     }
     QGroupBox::title {
@@ -71,7 +71,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 设置窗口大小
     setMinimumSize(1000, 700);
-    resize(800, 700);
+    resize(800, 800);
     setWindowTitle("雷达控制系统");
 
     central = new QWidget(this);
@@ -80,10 +80,19 @@ MainWindow::MainWindow(QWidget *parent)
     layout->setContentsMargins(10, 10, 10, 10);
     layout->setSpacing(10);
 
+    // 创建标签并添加边框，确保边框与文字的高度一致
+    QLabel *label = new QLabel("雷达监控系统", this);
+    label->setStyleSheet("font-size: 24pt; font-weight: bold; color: #00ffaa; "
+                         "border: 2px solid #00ffaa; padding: 6px 12px;");
+    label->setAlignment(Qt::AlignCenter); // 设置居中对齐
+
+    // 在标签和雷达图之间添加间距
+    layout->addWidget(label);
+
+    // 创建雷达图
     radar = new RadarPlot(this);
     radar->setMinimumSize(600, 600);
     layout->addWidget(radar, 1);
-
 
     // 按钮样式
     QString buttonStyle =  "QPushButton {"
@@ -116,8 +125,8 @@ MainWindow::MainWindow(QWidget *parent)
     startButton->setStyleSheet(buttonStyle);
     stopButton->setStyleSheet(buttonStyle);
 
-    startButton->setMinimumSize(120, 40);
-    stopButton->setMinimumSize(120, 40);
+    startButton->setMinimumSize(240, 40);
+    stopButton->setMinimumSize(240, 40);
 
     buttonLayout->addWidget(startButton);
     buttonLayout->addWidget(stopButton);
