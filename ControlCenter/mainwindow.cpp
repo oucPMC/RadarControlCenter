@@ -4,6 +4,7 @@
 #include "CommManager.h"
 #include "PacketCodec.h"
 #include "UdpLink.h"
+#include "bus_iface.h"
 #include <QLabel>
 #include <QHeaderView>
 #include <QFileDialog>
@@ -541,5 +542,5 @@ void MainWindow::onApplyPose() {
     j["yaw_deg"] = ui->spinYaw->value();
     j["east_m"] = ui->spinBiasE->value();
     j["north_m"] = ui->spinBiasN->value();
-
+}
 

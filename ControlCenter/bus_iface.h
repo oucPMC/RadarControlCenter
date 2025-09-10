@@ -18,7 +18,7 @@
  *  4) 订阅 0x3002 等上报，通过 onKeyStatusUpdated 信号更新 UI 状态条。
  */
 
-namespace Bus {
+namespace BusIface {
 
     // =============== 协议常量（根据题干与示例） ===============
     constexpr quint16 MSG_SET_SILENT_ZONE = 0x2091; // 设置静默区
