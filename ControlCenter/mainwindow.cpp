@@ -15,6 +15,7 @@
 #include <QCheckBox>
 #include <QAction>
 #include <QPushButton>
+#include <qjsonarray.h>
 
 QList<BusIface::Target> MainWindow::collectTargets() const {
     QList<BusIface::Target> out;
@@ -218,7 +219,7 @@ void MainWindow::onBusPayload(quint16 msgId, quint16 seq, QByteArray payload) {
         // 若不是 JSON，就原样塞入一行
         QList<QStandardItem*> row;
         row << new QStandardItem(QString("MSG 0x%1").arg(msgId, 4, 16, QChar('0')).toUpper())
-            << new QStandardItem(QString::fromUtf8(payload)))
+            << new QStandardItem(QString::fromUtf8(payload))
             << new QStandardItem("") << new QStandardItem(QString("seq=%1").arg(seq));
         m_queryModel->appendRow(row);
     }
@@ -226,12 +227,12 @@ void MainWindow::onBusPayload(quint16 msgId, quint16 seq, QByteArray payload) {
 
 void MainWindow::onBus3002(QVariantMap f) {
     // 底部状态条关键字段
-    sbWork->setText(QString("状态: %1").arg(f.value("workMode").toString("-")));
-    sbFreq->setText(QString("频点: %1").arg(f.value("freq").toString("-")));
-    sbSilent->setText(QString("静默: %1").arg(f.value("silent").toString("-")));
-    sbGeo->setText(QString("经纬高: %1").arg(f.value("geo").toString("-")));
-    sbAtt->setText(QString("姿态: %1").arg(f.value("att").toString("-")));
-    sbAlarm->setText(QString("告警: %1").arg(f.value("alarm").toString("-")));
+    sbWork->setText(QString("状态: %1").arg(f.value("workMode").toString()));
+    sbFreq->setText(QString("频点: %1").arg(f.value("freq").toString()));
+    sbSilent->setText(QString("静默: %1").arg(f.value("silent").toString()));
+    sbGeo->setText(QString("经纬高: %1").arg(f.value("geo").toString()));
+    sbAtt->setText(QString("姿态: %1").arg(f.value("att").toString()));
+    sbAlarm->setText(QString("告警: %1").arg(f.value("alarm").toString()));
 }
 
 
@@ -533,14 +534,14 @@ void MainWindow::onApplyIp() {
 void MainWindow::onApplyPose() {
     if (!m_bus) { QMessageBox::warning(this, "错误", "通信接口未就绪"); return; }
     // 读取界面：示例字段名，按你的 UI 控件名替换
-    QVariantMap j;
-    j["lat_deg"] = ui->spinLat->value();
-    j["lon_deg"] = ui->spinLon->value();
-    j["alt_m"] = ui->spinAlt->value();
-    j["roll_deg"] = ui->spinRoll->value();
-    j["pitch_deg"] = ui->spinPitch->value();
-    j["yaw_deg"] = ui->spinYaw->value();
-    j["east_m"] = ui->spinBiasE->value();
-    j["north_m"] = ui->spinBiasN->value();
+    // QVariantMap j;
+    // j["lat_deg"] = ui->spinLat->value();
+    // j["lon_deg"] = ui->spinLon->value();
+    // j["alt_m"] = ui->spinAlt->value();
+    // j["roll_deg"] = ui->spinRoll->value();
+    // j["pitch_deg"] = ui->spinPitch->value();
+    // j["yaw_deg"] = ui->spinYaw->value();
+    // j["east_m"] = ui->spinBiasE->value();
+    // j["north_m"] = ui->spinBiasN->value();
 }
 
