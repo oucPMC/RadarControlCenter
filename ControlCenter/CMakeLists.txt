@@ -18,9 +18,9 @@ set(PROJECT_SOURCES
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
-    # 你的源码
     CommManager.h PacketCodec.h Protocol.h UdpLink.h
     CommManager.cpp PacketCodec.cpp Protocol.cpp UdpLink.cpp
+    bus_iface.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
