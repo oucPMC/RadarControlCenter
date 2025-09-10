@@ -1,5 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "Protocol.h"
+#include "CommManager.h"
+#include "PacketCodec.h"
+#include "UdpLink.h"
 #include <QLabel>
 #include <QHeaderView>
 #include <QFileDialog>
