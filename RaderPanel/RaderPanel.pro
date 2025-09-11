@@ -31,7 +31,12 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 # D:\DownoaldAPP\QWT\qwt-6.3.0\qwt-6.3.0\src
-INCLUDEPATH += D:/02_Software/00_Package/qwt-6.3.0/src
-LIBS += -LD:/02_Software/00_Package/qwt-6.3.0/build/Desktop_Qt_6_9_2_MinGW_64_bit-Debug/lib
+# INCLUDEPATH += D:/DownoaldAPP/QWT/qwt-6.3.0/qwt-6.3.0/src
+# LIBS += -LD:/DownoaldAPP/QWT/qwt-6.3.0/build/Desktop_Qt_6_9_2_MinGW_64_bit-Debug/lib
+# debug:   LIBS += -lqwtd
+# release: LIBS += -lqwt
+INCLUDEPATH += D:/DownoaldAPP/QWT/qwt-6.3.0/qwt-6.3.0/src
+LIBS += -LD:/DownoaldAPP/QWT/qwt-6.3.0/qwt-6.3.0/build/Desktop_Qt_6_9_2_MinGW_64_bit-Debug/lib
+
 debug:   LIBS += -lqwtd
 release: LIBS += -lqwt

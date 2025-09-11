@@ -17,17 +17,174 @@
 #include <QSpinBox>
 
 
+// MainWindow::MainWindow(QWidget *parent)
+//     : QMainWindow(parent)
+// {
+//     QString neonStyle = R"(
+//     QWidget {
+//         background-color: #0a0a0a;
+//         color: #00ffaa;
+//         font-family: "Microsoft YaHei";
+//         font-size: 16pt;
+//     }
+
+//     QPushButton {
+//         color: #00ffaa;
+//         border: 2px solid #00ffaa;
+//         border-radius: 8px;
+//         padding: 6px 12px;
+//         background-color: rgba(0, 0, 0, 100);
+//     }
+//     QPushButton:hover {
+//         border: 2px solid #00ffcc;
+//         color: #00ffcc;
+//         background-color: rgba(0, 255, 170, 30);
+//     }
+
+//     QFrame, QGroupBox {
+//         margin-top: 10px;
+//     }
+//     QGroupBox::title {
+//         color: #00ffaa;
+//         subcontrol-origin: margin;
+//         left: 10px;
+//         padding: 0 3px;
+//     }
+
+//     QLabel {
+//         color: #00ffaa;
+//     }
+// )";
+
+//     qApp->setStyleSheet(neonStyle);
+
+//     // 设置暗色主题
+//     QApplication::setStyle(QStyleFactory::create("Fusion"));
+//     QPalette darkPalette;
+//     darkPalette.setColor(QPalette::Window, QColor(20, 30, 40));
+//     darkPalette.setColor(QPalette::WindowText, Qt::white);
+//     darkPalette.setColor(QPalette::Base, QColor(15, 25, 35));
+//     darkPalette.setColor(QPalette::AlternateBase, QColor(20, 30, 40));
+//     darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
+//     darkPalette.setColor(QPalette::ToolTipText, Qt::white);
+//     darkPalette.setColor(QPalette::Text, Qt::white);
+//     darkPalette.setColor(QPalette::Button, QColor(30, 40, 50));
+//     darkPalette.setColor(QPalette::ButtonText, Qt::white);
+//     darkPalette.setColor(QPalette::BrightText, Qt::red);
+//     darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
+//     darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
+//     darkPalette.setColor(QPalette::HighlightedText, Qt::black);
+//     QApplication::setPalette(darkPalette);
+
+//     // 设置窗口大小
+//     setMinimumSize(1000, 700);
+//     resize(800, 800);
+//     setWindowTitle("雷达控制系统");
+
+//     central = new QWidget(this);
+//     setCentralWidget(central);
+//     QVBoxLayout *layout = new QVBoxLayout(central);
+//     layout->setContentsMargins(10, 10, 10, 10);
+//     layout->setSpacing(10);
+
+//     // 创建标签并添加边框，确保边框与文字的高度一致
+//     QLabel *label = new QLabel("雷达监控系统", this);
+//     label->setStyleSheet("font-size: 24pt; font-weight: bold; color: #00ffaa; "
+//                          "border: 2px solid #00ffaa; padding: 6px 12px;");
+//     label->setAlignment(Qt::AlignCenter); // 设置居中对齐
+
+//     // 在标签和雷达图之间添加间距
+//     layout->addWidget(label);
+
+//     // 创建雷达图
+//     radar = new RadarPlot(this);
+//     radar->setMinimumSize(600, 600);
+//     layout->addWidget(radar, 1);
+
+//     // 按钮样式
+//     QString buttonStyle =  "QPushButton {"
+//                           "   color: #00FFAA;"  // 字体颜色
+//                           "   border: 2px solid #00FFAA;"
+//                           "   border-radius: 8px;"
+//                           "   background-color: rgba(0, 0, 0, 80);"
+//                           "   font-weight: bold;"
+//                           "   padding: 8px;"
+//                           "   text-shadow: 0 0 8px #00FFAA;"  // 文字发光
+//                           "   box-shadow: 0 0 12px #00FFAA;"  // 边框发光
+//                           "}"
+//                           "QPushButton:hover {"
+//                           "   background-color: rgba(0, 255, 170, 30);"
+//                           "   border: 2px solid #00FFCC;"
+//                           "   color: #00FFCC;"
+//                           "   box-shadow: 0 0 20px #00FFCC;"
+//                           "}"
+//                           "QPushButton:pressed {"
+//                           "   background-color: rgba(0, 200, 150, 80);"
+//                           "   border: 2px solid #00DD99;"
+//                           "   color: #00DD99;"
+//                           "   box-shadow: 0 0 25px #00DD99;"
+//                           "}";
+
+//     QHBoxLayout *buttonLayout = new QHBoxLayout();
+//     startButton = new QPushButton("开始扫描", this);
+//     stopButton  = new QPushButton("停止扫描", this);
+
+//     startButton->setStyleSheet(buttonStyle);
+//     stopButton->setStyleSheet(buttonStyle);
+
+//     startButton->setMinimumSize(240, 40);
+//     stopButton->setMinimumSize(240, 40);
+
+//     buttonLayout->addWidget(startButton);
+//     buttonLayout->addWidget(stopButton);
+//     buttonLayout->setAlignment(Qt::AlignCenter);
+//     buttonLayout->setSpacing(20);
+
+//     layout->addLayout(buttonLayout);
+
+//     connect(startButton, &QPushButton::clicked, this, &MainWindow::startSimulation);
+//     connect(stopButton,  &QPushButton::clicked, this, &MainWindow::stopSimulation);
+
+//     // simTimer = new QTimer(this);
+//     // connect(simTimer, &QTimer::timeout, this, &MainWindow::simulateJsonData);
+// }
+
+// MainWindow::~MainWindow() {
+//     if (updateTimer) {
+//         updateTimer->stop();
+//         delete updateTimer;
+//     }
+
+//     if(udpSocket) {
+//         udpSocket->close();
+//         delete udpSocket;
+//         udpSocket = nullptr;
+//     }
+// }
+#include "mainwindow.h"
+#include <QApplication>
+#include <QStyleFactory>
+#include <QPalette>
+#include <QLabel>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QGroupBox>
+#include <QFormLayout>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    // ====== 样式 ======
     QString neonStyle = R"(
     QWidget {
         background-color: #0a0a0a;
         color: #00ffaa;
         font-family: "Microsoft YaHei";
-        font-size: 16pt;
+        font-size: 14pt;
     }
-
     QPushButton {
         color: #00ffaa;
         border: 2px solid #00ffaa;
@@ -40,9 +197,13 @@ MainWindow::MainWindow(QWidget *parent)
         color: #00ffcc;
         background-color: rgba(0, 255, 170, 30);
     }
-
-    QFrame, QGroupBox {
+    QLabel {
+        color: #00ffaa;
+    }
+    QGroupBox {
+        border: 2px solid #00ffaa;
         margin-top: 10px;
+        border-radius: 6px;
     }
     QGroupBox::title {
         color: #00ffaa;
@@ -50,103 +211,121 @@ MainWindow::MainWindow(QWidget *parent)
         left: 10px;
         padding: 0 3px;
     }
-
-    QLabel {
-        color: #00ffaa;
-    }
-)";
+    )";
 
     qApp->setStyleSheet(neonStyle);
 
-    // 设置暗色主题
+    // ====== 暗色主题 ======
     QApplication::setStyle(QStyleFactory::create("Fusion"));
     QPalette darkPalette;
     darkPalette.setColor(QPalette::Window, QColor(20, 30, 40));
     darkPalette.setColor(QPalette::WindowText, Qt::white);
     darkPalette.setColor(QPalette::Base, QColor(15, 25, 35));
     darkPalette.setColor(QPalette::AlternateBase, QColor(20, 30, 40));
-    darkPalette.setColor(QPalette::ToolTipBase, Qt::white);
-    darkPalette.setColor(QPalette::ToolTipText, Qt::white);
     darkPalette.setColor(QPalette::Text, Qt::white);
     darkPalette.setColor(QPalette::Button, QColor(30, 40, 50));
     darkPalette.setColor(QPalette::ButtonText, Qt::white);
-    darkPalette.setColor(QPalette::BrightText, Qt::red);
-    darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
     darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
     darkPalette.setColor(QPalette::HighlightedText, Qt::black);
     QApplication::setPalette(darkPalette);
 
-    // 设置窗口大小
-    setMinimumSize(1000, 700);
-    resize(800, 800);
+    // ====== 主窗口设置 ======
+    setMinimumSize(1200, 800);
     setWindowTitle("雷达控制系统");
 
+    // 中央widget
     central = new QWidget(this);
     setCentralWidget(central);
-    QVBoxLayout *layout = new QVBoxLayout(central);
-    layout->setContentsMargins(10, 10, 10, 10);
-    layout->setSpacing(10);
 
-    // 创建标签并添加边框，确保边框与文字的高度一致
+    QHBoxLayout *mainLayout = new QHBoxLayout(central); // 左右分栏
+
+    // ================= 左边配置区 =================
+    QWidget *leftPanel = new QWidget(this);
+    leftPanel->setMinimumWidth(350);
+    QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
+
+    // 标题
     QLabel *label = new QLabel("雷达监控系统", this);
-    label->setStyleSheet("font-size: 24pt; font-weight: bold; color: #00ffaa; "
-                         "border: 2px solid #00ffaa; padding: 6px 12px;");
-    label->setAlignment(Qt::AlignCenter); // 设置居中对齐
+    label->setStyleSheet("font-size: 20pt; font-weight: bold; "
+                         "color: #00ffaa; border: 2px solid #00ffaa; "
+                         "padding: 6px 12px;");
+    label->setAlignment(Qt::AlignCenter);
+    leftLayout->addWidget(label);
 
-    // 在标签和雷达图之间添加间距
-    layout->addWidget(label);
+    // 配置区
+    QGroupBox *configBox = new QGroupBox("参数配置", this);
+    QFormLayout *formLayout = new QFormLayout(configBox);
 
-    // 创建雷达图
-    radar = new RadarPlot(this);
-    radar->setMinimumSize(600, 600);
-    layout->addWidget(radar, 1);
+    QComboBox *pulseCompressBox = new QComboBox(this);
+    pulseCompressBox->addItems({"是", "否"});
+    formLayout->addRow("脉冲压缩:", pulseCompressBox);
 
-    // 按钮样式
-    QString buttonStyle =  "QPushButton {"
-                          "   color: #00FFAA;"  // 字体颜色
-                          "   border: 2px solid #00FFAA;"
-                          "   border-radius: 8px;"
-                          "   background-color: rgba(0, 0, 0, 80);"
-                          "   font-weight: bold;"
-                          "   padding: 8px;"
-                          "   text-shadow: 0 0 8px #00FFAA;"  // 文字发光
-                          "   box-shadow: 0 0 12px #00FFAA;"  // 边框发光
-                          "}"
-                          "QPushButton:hover {"
-                          "   background-color: rgba(0, 255, 170, 30);"
-                          "   border: 2px solid #00FFCC;"
-                          "   color: #00FFCC;"
-                          "   box-shadow: 0 0 20px #00FFCC;"
-                          "}"
-                          "QPushButton:pressed {"
-                          "   background-color: rgba(0, 200, 150, 80);"
-                          "   border: 2px solid #00DD99;"
-                          "   color: #00DD99;"
-                          "   box-shadow: 0 0 25px #00DD99;"
-                          "}";
+    QLineEdit *pulseWidthEdit = new QLineEdit(this);
+    pulseWidthEdit->setPlaceholderText("单位: μs");
+    formLayout->addRow("脉宽:", pulseWidthEdit);
 
+    QLineEdit *bandwidthEdit = new QLineEdit(this);
+    bandwidthEdit->setPlaceholderText("单位: MHz");
+    formLayout->addRow("带宽:", bandwidthEdit);
+
+    QComboBox *pulseAccumBox = new QComboBox(this);
+    pulseAccumBox->addItems({"是", "否"});
+    formLayout->addRow("脉冲积累:", pulseAccumBox);
+
+    QLineEdit *pulseNumEdit = new QLineEdit(this);
+    formLayout->addRow("脉冲积累个数:", pulseNumEdit);
+
+    QLineEdit *speedEdit = new QLineEdit(this);
+    speedEdit->setPlaceholderText("单位: m/s");
+    formLayout->addRow("目标速度:", speedEdit);
+
+    QLineEdit *snrEdit = new QLineEdit(this);
+    snrEdit->setPlaceholderText("单位: dB");
+    formLayout->addRow("积累后信噪比:", snrEdit);
+
+    QLineEdit *dopplerEdit = new QLineEdit(this);
+    dopplerEdit->setPlaceholderText("单位: Hz");
+    formLayout->addRow("多普勒频率:", dopplerEdit);
+
+    leftLayout->addWidget(configBox);
+
+    // 按钮区
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     startButton = new QPushButton("开始扫描", this);
     stopButton  = new QPushButton("停止扫描", this);
+    QPushButton *confirmButton = new QPushButton("确定", this);
 
-    startButton->setStyleSheet(buttonStyle);
-    stopButton->setStyleSheet(buttonStyle);
-
-    startButton->setMinimumSize(240, 40);
-    stopButton->setMinimumSize(240, 40);
+    startButton->setMinimumSize(100, 40);
+    stopButton->setMinimumSize(100, 40);
+    confirmButton->setMinimumSize(100, 40);
 
     buttonLayout->addWidget(startButton);
     buttonLayout->addWidget(stopButton);
-    buttonLayout->setAlignment(Qt::AlignCenter);
-    buttonLayout->setSpacing(20);
+    buttonLayout->addWidget(confirmButton);
 
-    layout->addLayout(buttonLayout);
+    leftLayout->addLayout(buttonLayout);
+    leftLayout->addStretch();
 
+    // ================= 右边展示区 =================
+    QWidget *rightPanel = new QWidget(this);
+    QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
+
+    radar = new RadarPlot(this);
+    radar->setMinimumSize(600, 600);
+    rightLayout->addWidget(radar);
+
+    // ================= 加入主布局 =================
+    mainLayout->addWidget(leftPanel, 0);  // 左边
+    mainLayout->addWidget(rightPanel, 1); // 右边
+    mainLayout->setStretch(0, 1);
+    mainLayout->setStretch(1, 3);
+
+    // 信号槽
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startSimulation);
     connect(stopButton,  &QPushButton::clicked, this, &MainWindow::stopSimulation);
-
-    // simTimer = new QTimer(this);
-    // connect(simTimer, &QTimer::timeout, this, &MainWindow::simulateJsonData);
+    connect(confirmButton, &QPushButton::clicked, this, [](){
+        qDebug("参数确认按钮被点击");
+    });
 }
 
 MainWindow::~MainWindow() {
@@ -155,7 +334,7 @@ MainWindow::~MainWindow() {
         delete updateTimer;
     }
 
-    if(udpSocket) {
+    if (udpSocket) {
         udpSocket->close();
         delete udpSocket;
         udpSocket = nullptr;
