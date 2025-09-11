@@ -27,6 +27,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ControlCenter
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        Udpbus.h
+        Udpbus.cpp
     )
 else()
     if(ANDROID)
