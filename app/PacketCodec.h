@@ -2,6 +2,8 @@
 #include "Protocol.h"
 #include <QByteArray>
 
+// CRC16-MODBUS、和校验、打包/校验
+
 uint16_t crc16_modbus(const uint8_t* data, size_t len);
 uint16_t sum16(const uint8_t* data, size_t len);
 
