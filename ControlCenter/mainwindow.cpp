@@ -4,6 +4,7 @@
 #include "CommManager.h"
 #include "PacketCodec.h"
 #include "UdpLink.h"
+#include "Udpbus.h"
 #include "bus_iface.h"
 #include <QLabel>
 #include <QHeaderView>
@@ -68,6 +69,7 @@ void MainWindow::appendAckRow(quint16 ackId, quint16 respondedId, quint16 seq,
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+    m_bus = new UdpBus(this);
     setupModels();
     setupConnections();
     setupStatusBar();
@@ -146,6 +148,11 @@ void MainWindow::setupConnections() {
     connect(ui->btnDeploy, &QPushButton::clicked, this, &MainWindow::onDeploy);
     connect(ui->btnRetract, &QPushButton::clicked, this, &MainWindow::onRetract);
     connect(ui->btnSendTrackParams, &QPushButton::clicked, this, &MainWindow::onSendTrackParams);
+
+    connect(m_bus, &BusIface::busTx,this,   &MainWindow::onBusTx);
+    connect(m_bus, &BusIface::busAck,this,   &MainWindow::onBusAck);
+    connect(m_bus, &BusIface::busPayload, this,   &MainWindow::onBusPayload);
+
 
     // Query tab
     connect(ui->btnQueryStatus, &QPushButton::clicked, this, &MainWindow::onQueryStatus);
@@ -350,6 +357,9 @@ void MainWindow::onStartListen() {
     m_bus->setTargets(collectTargets());
     const bool ok = m_bus->start(localPort, p);
     sbConn->setText(ok ? "监听中" : "未连接");
+    if (ok) {
+        m_bus->subscribe(0x1003, true);
+    }
     if (!ok) QMessageBox::warning(this, "错误", "启动监听失败");
 }
 

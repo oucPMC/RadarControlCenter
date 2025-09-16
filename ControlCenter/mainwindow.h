@@ -1,8 +1,11 @@
 #pragma once
 #include "bus_iface.h"    // 统一通信接口
+#include "CommManager.h"
 #include <QMainWindow>
 #include <QStandardItemModel>
 #include <QLabel>
+
+class CommManager;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -61,6 +64,7 @@ private:
     void setupStatusBar();
 
     BusIface* m_bus = nullptr;              // 统一通信接口（外部注入或工厂创建）
+    CommManager* m_commManager = nullptr;
 
     // === 工具：UI <-> 数据 ===
     QList<BusIface::Target> collectTargets() const;
