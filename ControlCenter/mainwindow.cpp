@@ -152,6 +152,11 @@ void MainWindow::setupConnections() {
     connect(m_bus, &BusIface::busTx,this,   &MainWindow::onBusTx);
     connect(m_bus, &BusIface::busAck,this,   &MainWindow::onBusAck);
     connect(m_bus, &BusIface::busPayload, this,   &MainWindow::onBusPayload);
+    connect(m_bus, &BusIface::busTx,      this, &MainWindow::onBusTx);
+    connect(m_bus, &BusIface::busAck,     this, &MainWindow::onBusAck);
+    connect(m_bus, &BusIface::busPayload, this, &MainWindow::onBusPayload);
+    connect(m_bus, &BusIface::bus3002,    this, &MainWindow::onBus3002);
+
 
 
     // Query tab
@@ -233,14 +238,52 @@ void MainWindow::onBusPayload(quint16 msgId, quint16 seq, QByteArray payload) {
 }
 
 void MainWindow::onBus3002(QVariantMap f) {
-    // 底部状态条关键字段
-    sbWork->setText(QString("状态: %1").arg(f.value("workMode").toString()));
-    sbFreq->setText(QString("频点: %1").arg(f.value("freq").toString()));
+    // ----- 底部状态条 -----
+    sbWork ->setText(QString("状态: %1").arg(f.value("workMode").toString()));
+    sbFreq ->setText(QString("频点: %1").arg(f.value("freq").toString()));
     sbSilent->setText(QString("静默: %1").arg(f.value("silent").toString()));
-    sbGeo->setText(QString("经纬高: %1").arg(f.value("geo").toString()));
-    sbAtt->setText(QString("姿态: %1").arg(f.value("att").toString()));
+    sbGeo  ->setText(QString("经纬高: %1").arg(f.value("geo").toString()));
+    sbAtt  ->setText(QString("姿态: %1").arg(f.value("att").toString()));
     sbAlarm->setText(QString("告警: %1").arg(f.value("alarm").toString()));
+
+    // 频点/静默
+    ui->lblWorkState->setText(f.value("workMode").toString());
+    ui->lblFreq     ->setText(f.value("freq").toString());
+    ui->lblSilentArc->setText(f.value("silent").toString());
+
+    // 经纬高
+    const bool hasRawGeo = f.contains("raw.lat") && f.contains("raw.lon") && f.contains("raw.alt");
+    if (hasRawGeo) {
+        ui->lblLat->setText(QString::number(f.value("raw.lat").toDouble(), 'f', 6));
+        ui->lblLon->setText(QString::number(f.value("raw.lon").toDouble(), 'f', 6));
+        ui->lblAlt->setText(QString::number(f.value("raw.alt").toDouble(), 'f', 1) + " m");
+    } else {
+        ui->lblLat->setText("-");
+        ui->lblLon->setText("-");
+        ui->lblAlt->setText("-");
+    }
+
+    // 姿态
+    const bool hasRawAtt = f.contains("raw.yaw") && f.contains("raw.pitch") && f.contains("raw.roll");
+    if (hasRawAtt) {
+        ui->lblYaw  ->setText(QString::number(f.value("raw.yaw").toDouble(),   'f', 1) + "°");
+        ui->lblPitch->setText(QString::number(f.value("raw.pitch").toDouble(), 'f', 1) + "°");
+        ui->lblRoll ->setText(QString::number(f.value("raw.roll").toDouble(),  'f', 1) + "°");
+    } else {
+        ui->lblYaw  ->setText("-");
+        ui->lblPitch->setText("-");
+        ui->lblRoll ->setText("-");
+    }
+
+    // 设备展开/模拟/行驶状态
+    ui->lblDeployed->setText(f.value("deployed", "-").toString());
+    ui->lblSimMode ->setText(f.value("sim", "-").toString());
+    ui->lblDriveMode->setText(f.value("drive", "-").toString());
+
+    // 告警位
+    ui->lblFaultBits->setText(f.value("alarm").toString());
 }
+
 
 
 // ===== Toolbar slots =====

@@ -215,23 +215,60 @@ void UdpBus::onReadyRead() {
         }
         else if (msgId == MSG_STATUS) {
             const MsgStatus* st = reinterpret_cast<const MsgStatus*>(dat.constData());
-            // 控制台打印关键字段
-            qInfo().noquote() << QString("[STATUS] seq=%1 work=%2 range=%3 freq=%4 lat=%5 lon=%6")
-                                     .arg(seq).arg(st->work_state).arg(st->detect_range_m)
-                                     .arg(st->freq_GHz).arg(st->lat_deg).arg(st->lon_deg);
+
+            // === 1) 构造 UI 需要的字段 ===
+            // 工作模式（如无明确枚举，先做个简易映射/回退）
+            auto workModeText = [st]() -> QString {
+                switch (st->work_state) {
+                case 0: return QStringLiteral("待机(0)");
+                case 1: return QStringLiteral("搜索(1)");
+                case 2: return QStringLiteral("跟踪(2)");
+                default: return QStringLiteral("未知(%1)").arg(st->work_state);
+                }
+            }();
+
+
+            const QString freqText = QString("%1 GHz").arg(st->freq_GHz, 0, 'f', 2);
+            const double sDeg = st->silence_start / 100.0;
+            const double eDeg = st->silence_end   / 100.0;
+            const QString silentText = QString("%1° ~ %2°").arg(sDeg, 0, 'f', 2).arg(eDeg, 0, 'f', 2);
+            const QString geoText = QString("%1, %2, %3 m")
+                                        .arg(st->lat_deg, 0, 'f', 6)
+                                        .arg(st->lon_deg, 0, 'f', 6)
+                                        .arg(st->alt_m,   0, 'f', 1);
+            const QString attText = QString("Y %1°, P %2°, R %3°")
+                                        .arg(st->yaw_deg,   0, 'f', 1)
+                                        .arg(st->pitch_deg, 0, 'f', 1)
+                                        .arg(st->roll_deg,  0, 'f', 1);
+
+            QString alarmText = QStringLiteral("正常");
+            if (st->err_hw_sw[0] || st->err_hw_sw[1] || st->err_hw_sw[2] || st->err_hw_sw[3]) {
+                alarmText = QString("HW=0x%1, SW=[%2,%3,%4]")
+                .arg(st->err_hw_sw[0], 2, 16, QChar('0')).toUpper()
+                    .arg(st->err_hw_sw[1], 2, 16, QChar('0')).toUpper()
+                    .arg(st->err_hw_sw[2], 2, 16, QChar('0')).toUpper()
+                    .arg(st->err_hw_sw[3], 2, 16, QChar('0')).toUpper();
+            }
+
             if (subscriptions.contains(MSG_STATUS)) {
                 QVariantMap fields;
-                fields["workMode"] = st->work_state;
-                fields["range"]    = st->detect_range_m;
-                fields["freq"]     = st->freq_GHz;
-                fields["lat"]      = st->lat_deg;
-                fields["lon"]      = st->lon_deg;
+                fields["workMode"] = workModeText;                  // UI 用
+                fields["freq"]     = freqText;                      // UI 用
+                fields["silent"]   = silentText;                    // UI 用
+                fields["geo"]      = geoText;                       // UI 用
+                fields["att"]      = attText;                       // UI 用
+                fields["alarm"]    = alarmText;                     // UI 用
+
+                fields["range"]    = st->detect_range_m;            // 备用
+                fields["raw.lat"]  = st->lat_deg;
+                fields["raw.lon"]  = st->lon_deg;
+                fields["raw.alt"]  = st->alt_m;
+                fields["raw.yaw"]  = st->yaw_deg;
+                fields["raw.pitch"]= st->pitch_deg;
+                fields["raw.roll"] = st->roll_deg;
+
                 emit bus3002(fields);
             }
-            // 也把原始状态帧记一行到“应答/错码”以便统一查看（可选）
-            emit busAck(/*ackId*/MSG_STATUS, /*respondedId*/0x0000, seq, /*result*/0,
-                        QStringLiteral("STATUS from %1:%2 | %3")
-                            .arg(from.toString()).arg(port).arg(hexDump(dat)));
         }
         else {
             // 其它上行：优先按订阅转给 payload 表
