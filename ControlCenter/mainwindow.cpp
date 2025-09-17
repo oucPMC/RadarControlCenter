@@ -152,9 +152,7 @@ void MainWindow::setupConnections() {
     connect(m_bus, &BusIface::busTx,this,   &MainWindow::onBusTx);
     connect(m_bus, &BusIface::busAck,this,   &MainWindow::onBusAck);
     connect(m_bus, &BusIface::busPayload, this,   &MainWindow::onBusPayload);
-    connect(m_bus, &BusIface::busTx,      this, &MainWindow::onBusTx);
-    connect(m_bus, &BusIface::busAck,     this, &MainWindow::onBusAck);
-    connect(m_bus, &BusIface::busPayload, this, &MainWindow::onBusPayload);
+
     connect(m_bus, &BusIface::bus3002,    this, &MainWindow::onBus3002);
 
 
@@ -213,29 +211,121 @@ void MainWindow::onBusAck(quint16 ackId, quint16 respondedId, quint16 seq, quint
     appendAckRow(ackId, respondedId, seq, result, note);
 }
 
+void MainWindow::appendQueryKV(const QString& k, const QString& v,
+                               const QString& unit,
+                               const QString& desc ) {
+    QList<QStandardItem*> row;
+    row << new QStandardItem(k)
+        << new QStandardItem(v)
+        << new QStandardItem(unit)
+        << new QStandardItem(desc);
+    m_queryModel->appendRow(row);
+}
+
+static QString hexDump(const QByteArray& d) {
+    QString s; s.reserve(d.size() * 3);
+    for (int i = 0; i < d.size(); ++i)
+        s += QString("%1 ").arg(static_cast<unsigned char>(d[i]), 2, 16, QChar('0')).toUpper();
+    return s.trimmed();
+}
+
+
 void MainWindow::onBusPayload(quint16 msgId, quint16 seq, QByteArray payload) {
-    // 演示：把 payload 试着当 JSON 显示到“参数查询表”
-    QJsonParseError err{};
-    auto doc = QJsonDocument::fromJson(payload, &err);
-    if (err.error == QJsonParseError::NoError && doc.isObject()) {
-        auto o = doc.object().toVariantMap();
-        for (auto it = o.begin(); it != o.end(); ++it) {
-            QList<QStandardItem*> row;
-            row << new QStandardItem(it.key())
-                << new QStandardItem(it.value().toString())
-                << new QStandardItem("") << new QStandardItem(QString("0x%1 seq=%2").arg(msgId, 4, 16, QChar('0')).toUpper().arg(seq));
-            m_queryModel->appendRow(row);
-        }
-    }
-    else {
-        // 若不是 JSON，就原样塞入一行
+    auto hexDump = [](const QByteArray& d){ return d.toHex(' ').toUpper(); };
+    auto add = [&](const QString& k, const QString& v, const QString& unit = QString(), const QString& note = QString()){
         QList<QStandardItem*> row;
-        row << new QStandardItem(QString("MSG 0x%1").arg(msgId, 4, 16, QChar('0')).toUpper())
-            << new QStandardItem(QString::fromUtf8(payload))
-            << new QStandardItem("") << new QStandardItem(QString("seq=%1").arg(seq));
+        row << new QStandardItem(k)
+            << new QStandardItem(v)
+            << new QStandardItem(unit)
+            << new QStandardItem(note);
         m_queryModel->appendRow(row);
+    };
+    const QString note = QString("0x%1 seq=%2").arg(msgId, 4, 16, QChar('0')).toUpper().arg(seq);
+
+    // 先尝试 JSON（少数模块会回 JSON）
+    QJsonParseError jerr{};
+    const auto jdoc = QJsonDocument::fromJson(payload, &jerr);
+    if (jerr.error == QJsonParseError::NoError && jdoc.isObject()) {
+        const auto mp = jdoc.object().toVariantMap();
+        for (auto it = mp.begin(); it != mp.end(); ++it) add(it.key(), it.value().toString(), "", note);
+        return;
+    }
+
+    QDataStream ds(payload);
+    ds.setByteOrder(QDataStream::LittleEndian);
+
+    switch (msgId) {
+    case 0x2012: { // 雷达位置反馈：payload = float lon_deg + float lat_deg（小端）
+        if (payload.size() >= 8) {
+            // 直接按小端 float 读取
+            float lon = 0.f, lat = 0.f;
+            memcpy(&lon, payload.constData() + 0, 4);
+            memcpy(&lat, payload.constData() + 4, 4);
+
+            // 容错：若对端顺序反了（先纬后经），利用“|经度|通常>90”自动纠正
+            if (std::abs(lon) <= 90.f && std::abs(lat) > 90.f) std::swap(lon, lat);
+
+            add("经度", QString::number(lon, 'f', 6), "°", note);
+            add("纬度", QString::number(lat, 'f', 6), "°", note);
+        } else {
+            add("MSG 0x2012", hexDump(payload), "", note + " | len=" + QString::number(payload.size()));
+        }
+        break;
+    }
+
+    case 0x2072: { // 雷达IP反馈：payload[0..3] = ip 的4字节
+        if (payload.size() >= 4) {
+            const uchar b0 = uchar(payload[0]);
+            const uchar b1 = uchar(payload[1]);
+            const uchar b2 = uchar(payload[2]);
+            const uchar b3 = uchar(payload[3]);
+
+            // 网络序（大端）优先：b3.b2.b1.b0
+            const QString ip_be = QString("%1.%2.%3.%4").arg(b3).arg(b2).arg(b1).arg(b0);
+
+            add("IP地址", ip_be, "", note);
+        } else {
+            add("MSG 0x2072", hexDump(payload), "", note + " | len=" + QString::number(payload.size()));
+        }
+        break;
+    }
+
+
+    case 0x2062: { // 天线上电模式反馈：uint8
+        if (payload.size() >= 1) {
+            quint8 mode=0; ds >> mode;
+            // 如需文字映射，可自行改：0=关闭/1=单天线/2=双天线...
+            QString a = "";
+            if (mode == 0) a ="搜索";
+            else if (mode == 3) a="待机";
+            add("天线上电模式", QString::number(mode), a, note);
+        } else {
+            add("MSG 0x2062", hexDump(payload), "", note + " | len=" + QString::number(payload.size()));
+        }
+        break;
+    }
+
+    // 你之前已经做过的：静默区反馈、IP详细信息等
+    case 0x2092: {
+        if (payload.size() >= 4) {
+            quint16 start001=0, end001=0; ds >> start001 >> end001;
+            add("静默区起始", QString::number(start001/100.0, 'f', 2), "°", note);
+            add("静默区结束", QString::number(end001/100.0, 'f', 2), "°");
+        } else {
+            add("MSG 0x2092", hexDump(payload), "", note + " | len=" + QString::number(payload.size()));
+        }
+        break;
+    }
+
+    default:
+        // 其它未建模：统一以 HEX 展示，避免乱码
+        add(QString("MSG 0x%1").arg(msgId, 4, 16, QChar('0')).toUpper(),
+            hexDump(payload), "", note);
+        break;
     }
 }
+
+
 
 void MainWindow::onBus3002(QVariantMap f) {
     // ----- 底部状态条 -----
@@ -533,9 +623,9 @@ void MainWindow::onQueryParam() {
     const QString sel = ui->comboQueryId->currentText();
     quint16 queryId = 0x2000; // 默认兜底
     if (sel.contains("位置反馈")) queryId = 0x2012;
-    else if (sel.contains("IP反馈")) queryId = 0x2082;
+    else if (sel.contains("IP反馈")) queryId = 0x2072;
     else if (sel.contains("静默区反馈")) queryId = 0x2092;
-
+    else if (sel.contains("天线") || sel.contains("上电")) queryId = 0x2062;
     // 订阅该反馈ID，这样 UdpBus::onReadyRead() 收到后会转发到 UI
     m_bus->subscribe(queryId, true);
 

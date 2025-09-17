@@ -62,6 +62,10 @@ private:
     void setupModels();
     void setupConnections();
     void setupStatusBar();
+    void appendQueryKV(const QString& key,
+                       const QString& value,
+                       const QString& unit = QString(),
+                       const QString& desc = QString());
 
     BusIface* m_bus = nullptr;              // 统一通信接口（外部注入或工厂创建）
     CommManager* m_commManager = nullptr;

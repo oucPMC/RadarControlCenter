@@ -34,10 +34,12 @@ enum : uint16_t {
     MSG_SERVO_STOP          = 0x1009,
 
     // 配置/反馈
+    MSG_POS_FB              = 0x2012,
+    MSG_ANT_POWER_FB        = 0x2062,
     MSG_SILENCE_CFG         = 0x2091,   // 静默区配置
     MSG_SILENCE_FB          = 0x2092,   // 静默区反馈
     MSG_IP_CFG              = 0x2081,   // 雷达IP配置
-    MSG_IP_FB               = 0x2082,   // 雷达IP反馈
+    MSG_IP_FB               = 0x2072,   // 雷达IP反馈
     MSG_ERR_COMP_CFG        = 0x2051,   // 误差补偿配置（文档无规定，双方约定即可）
 
     // 工作数据
@@ -165,6 +167,30 @@ struct MsgStatus {
 
 // 航迹信息和报文没写了
 
+// 0x2012 雷达位置反馈：payload = float 经度 + float 纬度（小端）
+// 总长 = 32(FrameHead) + 8(payload) + 2(check) = 42 字节
+struct MsgPosFeedback {
+    FrameHead head;
+    float     lon_deg;   // 经度
+    float     lat_deg;   // 纬度
+    uint16_t  check;
+};
+
+// 0x2082 雷达IP反馈：payload = uint32 ip + uint8[8] 预留
+struct MsgIpFeedback {
+    FrameHead head;
+    uint32_t  ip;           // 小端 32-bit
+    uint8_t   reserved[8]{};
+    uint16_t  check;
+};
+
+// 0x2062 天线上电模式反馈：payload = uint8 模式 + uint8[11] 预留
+struct MsgAntPowerFeedback {
+    FrameHead head;
+    uint8_t   ant_power_mode;   // 0~?
+    uint8_t   reserved[11]{};
+    uint16_t  check;
+};
 #pragma pack(pop)
 
 // 提供 `fillFrameHead()` 方法，实现自动填充协议帧头、长度、序号自增、时间戳、校验方式。

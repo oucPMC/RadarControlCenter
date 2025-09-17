@@ -591,6 +591,11 @@
             </item>
             <item>
              <property name="text">
+              <string>天线上电模式反馈(0x2062)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string>IP反馈 (0x2082)</string>
              </property>
             </item>
