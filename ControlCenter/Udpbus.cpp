@@ -80,6 +80,17 @@ quint16 UdpBus::sendCommand(quint16 msgId, const QByteArray& payload) {
         dat = encode(pkt);
         break;
     }
+    case MSG_QUERY: {
+        quint16 qid = 0;
+        if (payload.size() >= 2) {
+            memcpy(&qid, payload.constData(), 2);
+        }
+        MsgQuery pkt{};
+        pkt.query_id = qid;
+        fillFrameHead(pkt.head, MSG_QUERY, sizeof(pkt), CHECK_CRC16);
+        dat = encode(pkt);
+        break;
+    }
     default: {
         // 通用情况：直接把 payload 拼接到 FrameHead 后
         FrameHead h{};

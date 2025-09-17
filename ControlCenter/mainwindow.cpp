@@ -525,20 +525,32 @@ void MainWindow::onQueryStatus() {
     appendCmdRow("0x3002 状态查询", seq, "-", "-", "发送");
 }
 
+// mainwindow.cpp
 void MainWindow::onQueryParam() {
     if (!m_bus) return;
-    // 根据下拉框选择不同的参数查询 ID
-    const QString sel = ui->comboQueryId->currentText();
-    quint16 msg = 0;
-    if (sel.contains("静默区")) msg = 0x2092;
-    else if (sel.contains("IP配置")) msg = 0x2082;
-    else if (sel.contains("位姿补偿")) msg = 0x2012;
-    else msg = 0x2000; // 兜底示例
 
-    QVariantMap j; j["query"] = sel;
-    const auto seq = m_bus->sendCommand(msg, buildPayloadFromJson(j));
-    appendCmdRow(QString("0x%1 参数查询").arg(msg, 4, 16, QChar('0')).toUpper(), seq, "-", "-", "发送");
+    // 解析下拉框得到“被查询的反馈ID”
+    const QString sel = ui->comboQueryId->currentText();
+    quint16 queryId = 0x2000; // 默认兜底
+    if (sel.contains("位置反馈")) queryId = 0x2012;
+    else if (sel.contains("IP反馈")) queryId = 0x2082;
+    else if (sel.contains("静默区反馈")) queryId = 0x2092;
+
+    // 订阅该反馈ID，这样 UdpBus::onReadyRead() 收到后会转发到 UI
+    m_bus->subscribe(queryId, true);
+
+    // 构造 2 字节小端 payload: queryId
+    QByteArray pl;
+    QDataStream ds(&pl, QIODevice::WriteOnly);
+    ds.setByteOrder(QDataStream::LittleEndian);
+    ds << queryId;
+
+    const auto seq = m_bus->sendCommand(0xF001, pl); // 统一发查询报文
+    appendCmdRow(QString("F001 查询 0x%1")
+                     .arg(queryId, 4, 16, QChar('0')).toUpper(),
+                 seq, "-", "-", "发送");
 }
+
 
 void MainWindow::onToggleSubscribe3002(bool checked) {
     ui->grpStatusMini->setEnabled(checked);
